@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" data-register="blueprint">
+<head>
+<title>One tap in Pocket PWA Studio spawns Pi in tmux and ships a verified PWA</title>
+<link rel="stylesheet" href="kit.css" data-ve-kit>
+<style>
+  .cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--s-4);
+    margin-top: var(--s-4);
+  }
+  .cmd-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    padding: var(--s-4);
+  }
+  .cmd-card code {
+    display: block;
+    margin-top: var(--s-2);
+    overflow-wrap: anywhere;
+    font-size: var(--t-small);
+  }
+</style>
+</head>
+<body><main>
+  <header>
+    <p class="eyebrow">Android · Termux · Pocket PWA Factory</p>
+    <h1>One tap in Studio spawns <span class="num">Pi</span> in tmux and ships a verified PWA</h1>
+    <p class="lead">Pocket PWA Studio stores app specs in <b>Dexie IndexedDB</b> and drives Termux scripts, tmux windows, and Pi builds through a local bridge or offline copy commands.</p>
+    <p class="meta">~/pwa-factory · port 4173 · Vite 6 + React 19 + Workbox</p>
+  </header>
+
+  <figure>
+    <ve-flow label="Pocket PWA Studio writes blueprints to Dexie, calls the Termux bridge, spawns tmux with Pi, and exports verified PWAs to Downloads.">
+      <ve-node id="studio" at="1 1" sub="port 4173 UI" key data-ref="studio">PWA Studio</ve-node>
+      <ve-node id="dexie" at="1 2" shape="db" sub="PocketPwaStudioDB" data-ref="dexie">Dexie IndexedDB</ve-node>
+      <ve-node id="bridge" at="2 1" sub="vite.config.ts" data-ref="bridge">/api/factory</ve-node>
+      <ve-node id="scaffold" at="3 1" sub="scripts/new-app.sh" data-ref="scaffold">Scaffold Starter</ve-node>
+      <ve-node id="tmux" at="3 2" sub="session rho:<slug>" data-ref="tmux">tmux + Pi Agent</ve-node>
+      <ve-node id="verify" at="4 1" sub="scripts/verify-app.sh" data-ref="verify">3-Step Gate</ve-node>
+      <ve-node id="export" at="4 2" sub="scripts/export-app.sh" data-ref="export">Android Downloads</ve-node>
+
+      <ve-edge from="studio" to="dexie" label="stores specs"/>
+      <ve-edge from="studio" to="bridge" label="POST /action" hot/>
+      <ve-edge from="bridge" to="scaffold" label="1. clone"/>
+      <ve-edge from="bridge" to="tmux" label="2. spawn Pi" hot/>
+      <ve-edge from="tmux" to="verify" label="3. tsc+test" hot/>
+      <ve-edge from="verify" to="export" label="4. dist copy"/>
+    </ve-flow>
+    <figcaption><span class="fig-n">Fig. 1</span>The hot path runs from the mobile Studio button through <code>/api/factory/action</code> into a background <code>tmux</code> window where Pi implements <code>SPEC.md</code> and passes <code>verify-app.sh</code>.</figcaption>
+  </figure>
+
+  <section class="kpis" aria-label="Factory metrics">
+    <div class="kpi">
+      <span class="ve-label">Resource Packs</span>
+      <span class="val"><span data-count="12">12</span><span class="unit">&nbsp;zips</span></span>
+      <ve-bars unit="zips" max="12" label="12 reference archives saved locally">
+        <ve-bar value="6" hot>UI/Theme</ve-bar>
+        <ve-bar value="6">PWA/Data</ve-bar>
+      </ve-bars>
+    </div>
+    <div class="kpi">
+      <span class="ve-label">Verification Gate</span>
+      <span class="val"><span data-count="3">3</span><span class="unit">&nbsp;stages</span></span>
+      <ve-bars unit="s" max="8" label="Typecheck takes 1s, Vitest takes 2s, Workbox build takes 7s">
+        <ve-bar value="1">tsc</ve-bar>
+        <ve-bar value="2">vitest</ve-bar>
+        <ve-bar value="7" hot>build</ve-bar>
+      </ve-bars>
+    </div>
+    <div class="kpi">
+      <span class="ve-label">Offline Readiness</span>
+      <span class="val"><span data-count="100">100</span><span class="unit">%</span></span>
+      <ve-waffle value="100" note="0 cloud deps" label="100 of 100 blueprint operations work offline in IndexedDB"></ve-waffle>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><p class="ve-label caps">Execution Modes</p><h2>Live bridge when local, clipboard commands when offline</h2></div>
+    <p>When <span class="ve-ref" data-ref="studio" tabindex="0">PWA Studio</span> connects to <span class="ve-ref" data-ref="bridge" tabindex="0">/api/factory</span>, tapping a card button runs the shell script or launches <span class="ve-ref" data-ref="tmux" tabindex="0">tmux + Pi Agent</span> directly. When opened offline as a standalone PWA, the same button copies the exact shell command to the Android clipboard.</p>
+
+    <div class="ve-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Script / Target</th>
+            <th>What it enforces</th>
+            <th class="num">Typical Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="chip ok">1. Scaffold</span></td>
+            <td><code>~/pwa-factory/scripts/new-app.sh &lt;slug&gt;</code></td>
+            <td>Copies <code>templates/mobile-pwa</code>, renames manifest, runs <code>npm install</code></td>
+            <td class="num">25&nbsp;s</td>
+          </tr>
+          <tr>
+            <td><span class="chip ok">2. Build</span></td>
+            <td><code>tmux new-session -A -s rho -n &lt;slug&gt;</code></td>
+            <td>Writes <code>SPEC.md</code> and starts <code>pi</code> inside the app folder</td>
+            <td class="num">1&nbsp;s</td>
+          </tr>
+          <tr>
+            <td><span class="chip ok">3. Verify</span></td>
+            <td><code>~/pwa-factory/scripts/verify-app.sh</code></td>
+            <td>Runs <code>tsc --noEmit</code>, Vitest + <code>fake-indexeddb</code>, and Workbox SW build</td>
+            <td class="num">10&nbsp;s</td>
+          </tr>
+          <tr>
+            <td><span class="chip ok">4. Export</span></td>
+            <td><code>~/pwa-factory/scripts/export-app.sh &lt;slug&gt;</code></td>
+            <td>Copies production <code>dist/</code> to <code>~/storage/downloads/PWA-Exports/&lt;slug&gt;</code></td>
+            <td class="num">8&nbsp;s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sources" aria-label="Sources">
+    <p class="ve-label caps">Sources</p>
+    <p>
+      <code>~/pwa-factory/apps/pwa-studio/src/App.tsx</code> ·
+      <code>~/pwa-factory/apps/pwa-studio/src/lib/db.ts</code> ·
+      <code>~/pwa-factory/apps/pwa-studio/vite.config.ts</code> ·
+      <code>~/pwa-factory/scripts/new-app.sh</code> ·
+      <code>~/pwa-factory/scripts/verify-app.sh</code> ·
+      <code>~/pwa-factory/scripts/export-app.sh</code>
+    </p>
+  </section>
+</main></body>
+</html>
